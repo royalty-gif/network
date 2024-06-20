@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD 99)
 # 链接库路径
 LINK_DIRECTORIES(
     ${PROJECT_SOURCE_DIR}/pcap/lib
+    ${PROJECT_SOURCE_DIR}/3rdparty/zlog/lib
 )
 
 # 头文件路径
@@ -16,6 +17,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/pcap/include/pcap
     ${PROJECT_SOURCE_DIR}/net/base
     ${PROJECT_SOURCE_DIR}/net/protocol
+    ${PROJECT_SOURCE_DIR}/3rdparty/zlog/include
 )
 
 file(GLOB_RECURSE SRC_FILES
@@ -27,4 +29,4 @@ file(GLOB_RECURSE SRC_FILES
 add_executable(${PROJECT_NAME} main.c ${SRC_FILES})
 
 # 链接库
-target_link_libraries(${PROJECT_NAME} pcap pthread)
+target_link_libraries(${PROJECT_NAME} pcap pthread zlog)

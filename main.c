@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "pcap.h"
+#include "zlog.h"
 
-
-int pcap_test_example(void) {
+void pcap_test_example(void) {
     pcap_t *handle;
     char errbuf[PCAP_ERRBUF_SIZE];
     const char *filename = "output.pcap";
@@ -13,7 +13,7 @@ int pcap_test_example(void) {
     handle = pcap_open_live(device, 65535, 1, 0, errbuf);
     if (handle == NULL) {
 		fprintf(stderr, "Couldn't open device %s: %s\n", "eth0", errbuf);
-		return 1;
+		return ;
     }
 
     /* 创建 pcap_dumper_t 用于保存数据 */
@@ -21,7 +21,7 @@ int pcap_test_example(void) {
     if (dumpfile == NULL) {
 		fprintf(stderr, "Couldn't open dump file %s: %s\n", filename,
         		pcap_geterr(handle));
-        return 2;
+        return ;
     }
 
     /* 进入捕获循环 */
@@ -39,10 +39,33 @@ int pcap_test_example(void) {
     /* 关闭资源 */
     pcap_close(handle);
     pcap_dump_close(dumpfile);
+
+}
+
+void zlog_test_example(void) {
+	int rc;
+    zlog_category_t *c;
+
+    rc = zlog_init("../zlog.conf");
+    if (rc) {
+      printf("init failed\n");
+      return ;
+    }
+
+    c = zlog_get_category("my_cat");
+    if (!c) {
+		printf("get cat fail\n");
+		zlog_fini();
+		return ;
+    }
+
+    zlog_info(c, "hello, zlog");
+
+    zlog_fini();
 }
 
 int main() {
-	pcap_test_example();    
+	zlog_test_example();    
 
     return 0;
 }
