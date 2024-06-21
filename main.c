@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include "net/base/log.h"
 #include "pcap.h"
-#include "zlog.h"
+#include "log.h"
 
 void pcap_test_example(void) {
     pcap_t *handle;
@@ -42,30 +43,16 @@ void pcap_test_example(void) {
 
 }
 
-void zlog_test_example(void) {
-	int rc;
-    zlog_category_t *c;
-
-    rc = zlog_init("../zlog.conf");
-    if (rc) {
-      printf("init failed\n");
-      return ;
-    }
-
-    c = zlog_get_category("my_cat");
-    if (!c) {
-		printf("get cat fail\n");
-		zlog_fini();
-		return ;
-    }
-
-    zlog_info(c, "hello, zlog");
-
-    zlog_fini();
-}
-
 int main() {
-	zlog_test_example();    
+	//zlog_test_example();    
+    if(log_init() != LOG_NO_ERROR) {
+        printf("log init error\n");
+        return -1;
+    }
 
+    info("log test!\n");
+
+    log_fini();
+    
     return 0;
 }
