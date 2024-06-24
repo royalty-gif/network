@@ -2,7 +2,7 @@
 #include "zlog.h"
 
 zlog_category_t* plog_category = NULL;
-log_error_t log_init(void) {
+log_err_t log_init(void) {
 
     int rc = zlog_init(LOG_CONF_PATH);
     if (rc) {

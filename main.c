@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "net/base/log.h"
 #include "pcap.h"
 #include "log.h"
 
@@ -43,14 +42,15 @@ void pcap_test_example(void) {
 
 }
 
-int main() {
-	//zlog_test_example();    
+int main() { 
     if(log_init() != LOG_NO_ERROR) {
         printf("log init error\n");
         return -1;
     }
 
-    info("log test!\n");
+    info("log test!");
+
+    info("size: %ld", sizeof(pthread_mutex_t));
 
     log_fini();
     

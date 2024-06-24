@@ -54,9 +54,9 @@ typedef enum {
 	LOG_NO_ERROR = 0,
 	LOG_PATH_ERROR = -1,
 	LOG_CAT_ERROR  = -2,
-} log_error_t;
+} log_err_t;
 
-log_error_t log_init(void);
+log_err_t log_init(void);
 void log_fini(void);
 
 
