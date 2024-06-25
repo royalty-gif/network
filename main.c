@@ -50,8 +50,6 @@ int main() {
 
     info("log test!");
 
-    info("size: %ld", sizeof(pthread_mutex_t));
-
     log_fini();
     
     return 0;

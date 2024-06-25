@@ -1,6 +1,8 @@
 #ifndef _UTILITY_H_
 #define _UTILITY_H_
 
+#include <time.h>
+
 #define is_equal(a, b)           \
 ({                               \
     unsigned ta = (unsigned)(a); \
@@ -18,5 +20,14 @@
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
+
+#define NSECS_PER_MSEC 1000000UL
+#define NSECS_PER_SEC 1000000000UL
+    
+#define DIFFNS(begin, end) ((end.tv_sec - begin.tv_sec) * NSECS_PER_SEC \
+                            + (end.tv_nsec - begin.tv_nsec))
+
+long long tm_to_ns(struct timespec tm);
+struct timespec ns_to_tm(long long ns);
 
 #endif
