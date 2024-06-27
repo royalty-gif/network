@@ -7,6 +7,10 @@ void nqueue_init(nqueue_t *queue) {
     queue->length = 0;
 }
 
+void nqueue_node_init(nqueue_node_t *node) {
+    nlist_init((nlist_node_t*)node);
+}
+
 int nqueue_is_empty(nqueue_t *queue) {
     return nlist_is_empty((nlist_node_t*)queue);
 }

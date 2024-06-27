@@ -49,7 +49,7 @@ int main() {
     }
 
     info("log test!");
-
+    
     log_fini();
     
     return 0;
