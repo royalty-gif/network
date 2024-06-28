@@ -1,3 +1,7 @@
+/*
+ * @brief: 存储管理器
+ */
+
 #ifndef _MBLOCK_
 #define _MBLOCK_
 

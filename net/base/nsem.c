@@ -77,7 +77,7 @@ int sys_sem_wait(sys_sem_t sem, size_t tmo_ms) {
 
 failed:
     pthread_mutex_unlock(&(sem->mutex));
-    return NET_ERR_SYS;
+    return -1;
 }
 
 void sys_sem_notify(sys_sem_t sem) {

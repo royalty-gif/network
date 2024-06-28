@@ -37,6 +37,6 @@ typedef enum _net_err_t {
     NET_ERR_CLOSE = -21,                    // 远程关闭
     NET_ERR_RESET = -20,                    // 收到复位
     NET_ERR_EOF = -23,                      // 文件结束
-}net_err_t;
+} net_err_t;
 
 #endif
