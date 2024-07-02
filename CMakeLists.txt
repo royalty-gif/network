@@ -17,6 +17,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/pcap/include/pcap
     ${PROJECT_SOURCE_DIR}/net/base
     ${PROJECT_SOURCE_DIR}/net/protocol
+    ${PROJECT_SOURCE_DIR}/net/plat
     ${PROJECT_SOURCE_DIR}/3rdparty/zlog/include
 )
 
@@ -24,6 +25,7 @@ file(GLOB_RECURSE SRC_FILES
     ${PROJECT_SOURCE_DIR}/net/*.c
     ${PROJECT_SOURCE_DIR}/net/base/*.c
     ${PROJECT_SOURCE_DIR}/net/protocol/*.c
+    ${PROJECT_SOURCE_DIR}/net/plat/*.c
 )
 
 add_executable(${PROJECT_NAME} main.c ${SRC_FILES})

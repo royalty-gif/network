@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <unistd.h>
+#include "net_err.h"
 #include "pcap.h"
 #include "log.h"
+#include "exmsg.h"
 
-void pcap_test_example(void) {
+static void pcap_test_example(void) {
     pcap_t *handle;
     char errbuf[PCAP_ERRBUF_SIZE];
     const char *filename = "output.pcap";
@@ -42,15 +45,33 @@ void pcap_test_example(void) {
 
 }
 
+static net_err_t test_exmsg_func(struct _func_msg_t* msg) {
+    info("test exmsg func!");
+
+    return NET_ERR_OK;
+}
+
+static void exmsg_test_example(void) {
+    exmsg_init();
+
+    exmsg_start();
+
+    sleep(1);
+
+    exmsg_func_exec(test_exmsg_func, NULL);
+
+    sleep(1);
+}
+
 int main() { 
     if(log_init() != LOG_NO_ERROR) {
         printf("log init error\n");
         return -1;
     }
 
-    info("log test!");
-    
+    exmsg_test_example();
+
     log_fini();
-    
+
     return 0;
 }

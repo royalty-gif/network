@@ -1,5 +1,5 @@
-#ifndef _NET_CFG_H_
-#define _NET_CFG_H_
+#ifndef _NET_ERR_H_
+#define _NET_ERR_H_
 
 /*
  * 错误码及其类型
