@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <malloc.h>
 #include "net_err.h"
+#include "nqueue.h"
 #include "pcap.h"
 #include "log.h"
 #include "exmsg.h"
+#include "utility.h"
 
 static void pcap_test_example(void) {
     pcap_t *handle;
@@ -63,13 +66,55 @@ static void exmsg_test_example(void) {
     sleep(1);
 }
 
+static void nqueue_test_example(void) {
+    nqueue_t queue;
+    nqueue_init(&queue);
+
+    typedef struct _nqueue_node_t {
+        nlist_node_t node;
+        int data;
+    } nqueue_node;
+
+    int test_count = 10;
+
+    int push_front = 1;
+    for(int i = 0; i < test_count; i++) {
+        nqueue_node* qnode = (nqueue_node*)malloc(sizeof(nqueue_node));
+        qnode->data = i;
+
+        if( push_front ) {
+            nqueue_push_front(&queue, &qnode->node);
+        } else {
+            nqueue_push_back(&queue, &qnode->node);
+        }
+    }
+
+    info("queue length: %d", nquene_length(&queue));
+    info("front: %d, back: %d", 
+         container_of(nqueue_front(&queue),nqueue_node, node)->data,
+         container_of(nqueue_back(&queue),nqueue_node, node)->data);
+
+    int pop_front = 1;
+    for(int i = 0; i < test_count; i++) {
+        nqueue_node* qnode = NULL;
+        if( pop_front ) {
+            qnode = container_of(nqueue_pop_front(&queue), nqueue_node, node);
+        } else {
+            qnode = container_of(nqueue_pop_back(&queue), nqueue_node, node);
+        }
+
+        info("node value: %d", qnode->data);
+        free(qnode);
+    }
+}
+
 int main() { 
     if(log_init() != LOG_NO_ERROR) {
         printf("log init error\n");
         return -1;
     }
 
-    exmsg_test_example();
+    nqueue_test_example();
 
     log_fini();
 

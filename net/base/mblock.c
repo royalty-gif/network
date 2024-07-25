@@ -30,7 +30,7 @@ net_err_t mblock_init (mblock_t* mblock, void* mem, int blk_size, int cnt, nlock
     for(int i = 0; i < cnt; i++, buf += blk_size) {
         nqueue_node_t* node = (nqueue_node_t*)buf;
         nqueue_node_init(node);
-        nqueue_push(&mblock->free_queue, node);
+        nqueue_push_back(&mblock->free_queue, node);
     }
 
     // 初始化信号量
@@ -67,7 +67,7 @@ void* mblock_alloc(mblock_t* mblock, int ms) {
 
     // 获取分配项
     nlocker_lock(&mblock->locker);
-    nqueue_node_t* node = nqueue_pop(&mblock->free_queue);
+    nqueue_node_t* node = nqueue_pop_front(&mblock->free_queue);
     nlocker_unlock(&mblock->locker);
 
     return node;
@@ -83,7 +83,7 @@ int mblock_free_blk_cnt(mblock_t* mblock) {
 
 void mblock_free(mblock_t* mblock, void* block) {
     nlocker_lock(&mblock->locker);
-    nqueue_push(&mblock->free_queue, block);
+    nqueue_push_back(&mblock->free_queue, block);
     nlocker_unlock(&mblock->locker);
 
     // 释放掉一个资源，通知其它任务该资源可用
