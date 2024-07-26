@@ -1,4 +1,6 @@
 #include "pktbuf.h"
+#include "net_cfg.h"
+#include "net_err.h"
 #include "nlist.h"
 #include "nlocker.h"
 #include "mblock.h"
@@ -78,6 +80,15 @@ static void pktblk_free_list(pktblk_t* blk_list) {
 }
 
 /**
+ *  @brief: 释放一个block
+ */
+static void pktblk_free(pktblk_t* blk) {
+    nlocker_lock(&locker);
+    mblock_free(&block_list, blk);
+    nlocker_unlock(&locker);
+}
+
+/**
  *  @brief: 分配一个空闲的block
  */
 static pktblk_t* pktblk_alloc(void) {
@@ -136,7 +147,8 @@ static pktblk_t* pktblk_alloc_list(int size, pkt_pos_t pos) {
                 first_block = new_block;
             }
 
-            new_block->pdata = new_block->payload;
+            // new_block->pdata = new_block->payload;
+            new_block->pdata = new_block->payload + PKTBUF_BLK_SIZE - curr_size;
             if( pre_block ) {
                 nlist_insert_after(&pre_block->node, &new_block->node);
             }
@@ -255,4 +267,101 @@ void pktbuf_free (pktbuf_t* pbuf) {
     }
 
     nlocker_unlock(&locker);
+}
+
+/**
+ *  @brief: 为数据包新增一个数据头
+ */
+net_err_t pktbuf_add_header(pktbuf_t* pbuf, int size, int cont) {
+    if( !pbuf && !pbuf->ref ) {
+        error("buf is invaild...");
+        return NET_ERR_PARAM;
+    }
+
+    pktblk_t* block = pktbuf_first_blk(pbuf);
+
+    // 检查头部是否足够
+    int remain_size = block->pdata - block->payload;
+    info("remain size: %d", remain_size);
+    if( size <= remain_size ) {
+        block->size += size;
+        block->pdata -= size;
+        pbuf->total_size += size;
+
+        display_check_buf(pbuf);
+        return NET_ERR_OK;
+    }
+
+    // 没有足够的空间，需要额外分配块添加到头部
+    if( cont ) {
+        // 要求连续时，但是大小超过一个块的大小，分配失败
+        if( size > PKTBUF_BLK_SIZE ) {
+            error("contious and header size is too big, size: %d", size);
+            return NET_ERR_NONE;
+        }
+
+        // 新分配一个块，原本的区空间不影响
+        block = pktblk_alloc_list(size, PACKET_INSERT_FRONT);
+        if( !block ) {
+            error("no memory to alloc packet blk, size: %d", size);
+            return NET_ERR_NONE;
+        }
+
+    } else {
+        // 非连续分配，则将前边的空间利用起来，再分配剩下的大小
+        block->pdata = block->payload;
+        block->size += remain_size;
+        pbuf->total_size += remain_size;
+        size -= remain_size;
+
+        // 再分配未用的空间
+        block = pktblk_alloc_list(size, PACKET_INSERT_FRONT);
+        if( !block ) {
+            error("no memory to alloc packet blk, size: %d", size);
+            return NET_ERR_NONE;
+        }
+    }
+
+    // 将数据块加入列表的头部
+    pktbuf_insert_blk_list(pbuf, block, PACKET_INSERT_FRONT);
+
+    display_check_buf(pbuf);
+
+    return NET_ERR_OK;
+}
+
+/**
+ *  @brief: 移除数据包头
+ */
+net_err_t pktbug_remove_header(pktbuf_t* pbuf, int size) {
+    if( !pbuf && !pbuf->ref ) {
+        error("buf is invaild...");
+        return NET_ERR_PARAM;
+    }
+
+    pktblk_t* block = pktbuf_first_blk(pbuf);
+    while( size ) {
+        // 判断当前的包是否足够减去头，满足则直接在当前表操作即可
+        if( size < block->size ) {
+            block->pdata += size;
+            block->size -= size;
+            pbuf->total_size -= size;
+            break;
+        }
+
+        // 不满足，则将当数据包释放了
+        pktblk_t* next_blk = pktblk_next(block);
+        int curr_size = block->size;
+
+        nqueue_pop_front(&pbuf->blk_queue);
+        pktblk_free(block);
+
+        size -= curr_size;
+        pbuf->total_size -= curr_size;
+        block = next_blk;
+    }
+
+    display_check_buf(pbuf);
+
+    return NET_ERR_OK;
 }

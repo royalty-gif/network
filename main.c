@@ -117,6 +117,12 @@ static void pktbuf_test_example(void) {
     if( pbuf == NULL ) {
         info("pbuf alloc failed!");
     }
+
+    info("add header!");
+    pktbuf_add_header(pbuf, 10000, 0);
+
+    info("remove header!");
+    pktbug_remove_header(pbuf, 10000);
 }
 
 int main() { 

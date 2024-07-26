@@ -40,6 +40,9 @@ typedef struct _pktbuf_t {
 
 net_err_t pktbuf_init(void);
 pktbuf_t* pktbuf_alloc(int size);
-void pktbuf_free (pktbuf_t * buf);
+void pktbuf_free(pktbuf_t * buf);
+
+net_err_t pktbuf_add_header(pktbuf_t* pbuf, int size, int cont);
+net_err_t pktbug_remove_header(pktbuf_t* pbuf, int size);
 
 #endif
