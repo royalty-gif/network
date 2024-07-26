@@ -7,6 +7,7 @@
 #include "log.h"
 #include "exmsg.h"
 #include "utility.h"
+#include "pktbuf.h"
 
 static void pcap_test_example(void) {
     pcap_t *handle;
@@ -96,15 +97,25 @@ static void nqueue_test_example(void) {
 
     int pop_front = 1;
     for(int i = 0; i < test_count; i++) {
-        nqueue_node* qnode = NULL;
+        nqueue_node_t* node = NULL;
         if( pop_front ) {
-            qnode = container_of(nqueue_pop_front(&queue), nqueue_node, node);
+            node = nqueue_pop_front(&queue);
         } else {
-            qnode = container_of(nqueue_pop_back(&queue), nqueue_node, node);
+            node = nqueue_pop_back(&queue);
         }
 
+        nqueue_node* qnode = container_of(node, nqueue_node, node);
         info("node value: %d", qnode->data);
         free(qnode);
+    }
+}
+
+static void pktbuf_test_example(void) {
+    pktbuf_init();
+
+    pktbuf_t* pbuf = pktbuf_alloc(65535);
+    if( pbuf == NULL ) {
+        info("pbuf alloc failed!");
     }
 }
 
@@ -114,7 +125,7 @@ int main() {
         return -1;
     }
 
-    nqueue_test_example();
+    pktbuf_test_example();
 
     log_fini();
 

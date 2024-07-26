@@ -126,7 +126,7 @@ static pktblk_t* pktblk_alloc_list(int size, pkt_pos_t pos) {
             new_block->pdata = new_block->payload + PKTBUF_BLK_SIZE - curr_size;
 
             if( first_block ) {
-                nlist_insert_after(&first_block->node, &new_block->node);
+                nlist_insert_before(&first_block->node, &new_block->node);
             }
 
             first_block = new_block;
@@ -138,12 +138,12 @@ static pktblk_t* pktblk_alloc_list(int size, pkt_pos_t pos) {
 
             new_block->pdata = new_block->payload;
             if( pre_block ) {
-                nlist_insert_before(&pre_block->node, &new_block->node);
+                nlist_insert_after(&pre_block->node, &new_block->node);
             }
 
             pre_block = new_block;
         }
-
+        
         size -= curr_size;
     }
 
@@ -155,30 +155,22 @@ static pktblk_t* pktblk_alloc_list(int size, pkt_pos_t pos) {
  */
 
 static void pktbuf_insert_blk_list(pktbuf_t* pbuf, pktblk_t* blk_list, pkt_pos_t pos) {
-    if( pos == PACKET_INSERT_FRONT ) {
-        // 插到头部
-        while( blk_list ) {
-            // 不断从blk_list中取出块，然后插入到buf的前边
-            pktblk_t* next = pktblk_next(blk_list);
 
-            nqueue_push_front(&pbuf->blk_queue, &blk_list->node);
-            pbuf->total_size += blk_list->size;
-
-            blk_list = next;
+    pktblk_t* curr_blk = blk_list;
+    do {
+        // 不断从blk_list中取出块，然后插入到buf的后边
+        // 后续可能要进行改进，直接将整条链表插入即可
+        pktblk_t* next = pktblk_next(curr_blk);
+        
+        if( pos == PACKET_INSERT_FRONT ) {
+            nqueue_push_front(&pbuf->blk_queue, &curr_blk->node);
+        } else if( pos == PACKET_INSERT_REAR ) {
+            nqueue_push_back(&pbuf->blk_queue, &curr_blk->node);
         }
-    } else if( pos == PACKET_INSERT_REAR ) {
-        // 插到尾部
-        while( blk_list ) {
-            // 不断从blk_list中取出块，然后插入到buf的后边
-            // 后续可能要进行改进，直接将整条链表插入即可
-            pktblk_t* next = pktblk_next(blk_list);
+        pbuf->total_size += curr_blk->size;
 
-            nqueue_push_back(&pbuf->blk_queue, &blk_list->node);
-            pbuf->total_size += blk_list->size;
-
-            blk_list = next;
-        }
-    }
+        curr_blk = next;
+    } while( curr_blk != blk_list );
 }
 
 /**
@@ -191,6 +183,32 @@ void pktbuf_reset_acc(pktbuf_t* pbuf) {
         pbuf->blk_offset = pbuf->curr_blk ? pbuf->curr_blk->pdata : (uint8_t *)0;
     }
 }
+
+/**
+ *  @brief: 显示和检查buf的情况
+ */
+
+static void display_check_buf(pktbuf_t* pbuf) {
+    if( !pbuf ) {
+        error("buf is invaild...");
+        return;
+    }
+
+    info("packet buf total size: %d", pbuf->total_size);
+    info("queue length: %d", nquene_length(&pbuf->blk_queue));
+
+    pktblk_t* first_blk = pktbuf_first_blk(pbuf);
+    pktblk_t* curr = first_blk;
+    nlist_node_t* head = &pbuf->blk_queue.head;
+
+    int total_size = 0;
+    while( &curr->node != head ) {
+        total_size += curr->size;
+        curr = pktblk_next(curr);
+    }
+
+    info("total_size: %d", total_size);
+} 
 
 pktbuf_t* pktbuf_alloc(int size) {
     // 分配结构
@@ -221,6 +239,9 @@ pktbuf_t* pktbuf_alloc(int size) {
 
     // 设置读写情况
     pktbuf_reset_acc(pbuf);
+
+    // 检查buf
+    display_check_buf(pbuf);
 
     return pbuf;
 }
