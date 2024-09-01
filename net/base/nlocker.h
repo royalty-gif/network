@@ -8,7 +8,8 @@ typedef pthread_mutex_t* sys_mutex_t;
 
 typedef enum {
     NLOCKER_NONE,
-    NLOCKER_THREAD,
+    NLOCKER_THREAD,   // 线程之间共享的锁
+    NLOCKER_INT,      // 中断相关的锁
 } nlocker_type_t;
 
 typedef struct _nlocker_t {
