@@ -41,8 +41,13 @@ typedef struct _pktbuf_t {
 net_err_t pktbuf_init(void);
 pktbuf_t* pktbuf_alloc(int size);
 void pktbuf_free(pktbuf_t * buf);
+void pktbuf_reset_acc(pktbuf_t* pbuf);
 
 net_err_t pktbuf_add_header(pktbuf_t* pbuf, int size, int cont);
 net_err_t pktbug_remove_header(pktbuf_t* pbuf, int size);
+
+int pktbuf_write(pktbuf_t* buf, uint8_t* src, int size);
+int pktbuf_read(pktbuf_t* buf, uint8_t* dest, int size);
+net_err_t pktbuf_seek(pktbuf_t *buf, int offset);
 
 #endif

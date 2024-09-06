@@ -6,7 +6,9 @@
 #include "mblock.h"
 #include "log.h"
 #include "nqueue.h"
+#include "sys_plat.h"
 #include "utility.h"
+#include <stdint.h>
 
 static nlocker_t locker;    // 分配与回收的锁
 static mblock_t block_list; // 空闲数据块列表
@@ -222,6 +224,9 @@ static void display_check_buf(pktbuf_t* pbuf) {
     info("total_size: %d", total_size);
 } 
 
+/**
+ *  @brief: 申请pktbuf
+ */
 pktbuf_t* pktbuf_alloc(int size) {
     // 分配结构
     nlocker_lock(&locker);
@@ -258,6 +263,9 @@ pktbuf_t* pktbuf_alloc(int size) {
     return pbuf;
 }
 
+/**
+ *  @brief: 释放pktbuf
+ */
 void pktbuf_free (pktbuf_t* pbuf) {
     nlocker_lock(&locker);
 
@@ -364,4 +372,110 @@ net_err_t pktbug_remove_header(pktbuf_t* pbuf, int size) {
     display_check_buf(pbuf);
 
     return NET_ERR_OK;
+}
+
+
+// 获取pktbuf的有效数据空间大小
+static int total_blk_remain(pktbuf_t* buf) {
+    return buf->total_size - buf->pos;
+}
+
+// 获取当前的block余下的空间大小
+static int curr_blk_remain(pktbuf_t* buf) {
+    pktblk_t* block = buf->curr_blk;
+    if (!block) {
+        return 0;
+    }
+
+    return (int)(buf->curr_blk->pdata + block->size - buf->blk_offset);
+}
+
+// 移动指针位置，如果是跨越一个包，则仅移动到下一个包的开头
+static void move_forward(pktbuf_t* buf, int size) {
+    pktblk_t* curr_blk = buf->curr_blk;
+
+    // 调整读写位置
+    buf->pos += size;
+    buf->blk_offset += size;
+
+    // 可能超过当前块，所以要移动到下一块
+    if(buf->blk_offset >= curr_blk->pdata + curr_blk->size) {
+        buf->curr_blk = pktblk_next(curr_blk);
+        if( buf->curr_blk ) {
+            buf->blk_offset = buf->curr_blk->pdata;
+        } else {
+            // 下一块为空
+            buf->blk_offset = (uint8_t*)0;
+        }
+    }
+}
+
+/**
+ *  @brief: 将src的数据写入到buf中
+ */
+int pktbuf_write(pktbuf_t *buf, uint8_t *src, int size) {
+    // 参数检查
+    if(!src || !size) {
+        return NET_ERR_PARAM;
+    }
+
+    int remain_size = total_blk_remain(buf);
+    if( remain_size < size ) {
+        error("size error, remain_size(%d) < size(%d)", remain_size, size);
+        return NET_ERR_SIZE;
+    }
+
+    // 循环写入数据
+    while( size > 0 ) {
+        int blk_size = curr_blk_remain(buf);
+
+        int curr_copy_size = size > blk_size ? blk_size : size;
+        plat_memcpy(buf->blk_offset, src, curr_copy_size);
+
+        // 移动指针
+        move_forward(buf, curr_copy_size);
+        src += curr_copy_size;
+        size -= curr_copy_size;
+    }
+
+    return NET_ERR_OK;
+}
+
+
+/**
+ *  @brief: 从当前位置读出指定数据量
+ */
+int pktbuf_read(pktbuf_t *buf, uint8_t *dest, int size) {
+    // 参数检查
+    if(!dest || !size) {
+        return NET_ERR_OK;
+    }
+
+    int remain_size = total_blk_remain(buf);
+    if( remain_size < size ) {
+        error("size error, remain_size(%d) < size(%d)", remain_size, size);
+        return NET_ERR_SIZE;
+    }
+
+    // 循环读取所有量
+    while (size > 0) {
+        int blk_size = curr_blk_remain(buf);
+        int curr_copy = size > blk_size ? blk_size : size;
+        plat_memcpy(dest, buf->blk_offset, curr_copy);
+
+        // 超出当前buf，移至下一个buf
+        move_forward(buf, curr_copy);
+
+        dest += curr_copy;
+        size -= curr_copy;
+    }
+
+    return NET_ERR_OK;
+}
+
+/**
+ *  @brief: 移动当前的读写位置到offset偏移处
+ */
+net_err_t pktbuf_seek(pktbuf_t *buf, int offset) {
+
 }
