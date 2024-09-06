@@ -82,6 +82,11 @@ net_err_t netif_init(void);
 netif_t* netif_add(const char* dev_name, const netif_ops_t* ops, void* ops_data);
 net_err_t netif_remove(netif_t* netif);
 net_err_t netif_register_layer(netif_type_t type, const link_layer_t* layer);
+void netif_set_hwaddr(netif_t* netif, const uint8_t* hwaddr, int len);
 
-
+// 输入输出管理
+net_err_t netif_put_in(netif_t* netif, pktbuf_t* buf, int tmo);
+pktbuf_t* netif_get_in(netif_t* netif, int tmo);
+net_err_t netif_put_out(netif_t * netif, pktbuf_t * buf, int tmo);
+pktbuf_t* netif_get_out(netif_t * netif, int tmo);
 #endif

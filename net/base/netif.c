@@ -8,6 +8,7 @@
 #include "nlocker.h"
 #include "sys_plat.h"
 #include "ipaddr.h"
+#include "exmsg.h"
 
 static netif_t netif_buffer[NETIF_DEV_CNT];     // 网络接口的数量
 static mblock_t netif_mblock;                   // 接口分配结构
@@ -149,4 +150,67 @@ net_err_t netif_register_layer(netif_type_t type, const link_layer_t* layer) {
     link_layers[type] = layer;
 
     return NET_ERR_OK;
+}
+
+void netif_set_hwaddr(netif_t *netif, const uint8_t *hwaddr, int len) {
+    plat_memcpy(netif->hwaddr.addr, hwaddr, len);
+    netif->hwaddr.len = len;
+}
+
+net_err_t netif_put_in(netif_t *netif, pktbuf_t *buf, int tmo) {
+    // 写入接收队列
+    net_err_t err = fixq_send(&netif->in_q, buf, tmo);
+    if (err < 0) {
+        error("netif %s in_q full", netif->name);
+        return NET_ERR_FULL;
+    }
+
+    // 当输入队列中只有刚写入的这个包时，发消息通知工作线程去处理
+    // 可能的情况：
+    // 1. 数量为1，只有刚写入的包，发消息通知
+    // 2. 数量为0，前面刚写入，正好立即被工作线程处理掉，无需发消息
+    // 3. 数量超过1，即有累积的包，工作线程正在处理，无需发消息
+    if (fixq_count(&netif->in_q) == 1) {
+        exmsg_netif_in(netif);
+    }
+    return NET_ERR_OK;
+}
+
+pktbuf_t *netif_get_in(netif_t *netif, int tmo) {
+    // 从接收队列中取数据包
+    pktbuf_t* buf = fixq_recv(&netif->in_q, tmo);
+    if (buf) {
+        // 重新定位，方便进行读写
+        pktbuf_reset_acc(buf);
+        return buf;
+    }
+
+    info("netif %s in_q empty", netif->name);
+    return (pktbuf_t*)0;
+}
+
+net_err_t netif_put_out(netif_t * netif, pktbuf_t * buf, int tmo) {
+    // 写入发送队列
+    net_err_t err = fixq_send(&netif->out_q, buf, tmo);
+    if (err < 0) {
+        error("netif %s out_q full", netif->name);
+        return err;
+    }
+
+    // 只是写入队列，具体的发送会调用ops->xmit来启动发送
+    return NET_ERR_OK;
+}
+
+pktbuf_t* netif_get_out(netif_t * netif, int tmo) {
+    // 从发送队列中取数据包，不需要等待。可能会被中断处理程序中调用
+    // 因此，不能因为没有包而挂起程序
+    pktbuf_t* buf = fixq_recv(&netif->out_q, tmo);
+    if (buf) {
+        // 重新定位，方便进行读写
+        pktbuf_reset_acc(buf);
+        return buf;
+    }
+
+    info("netif %s out_q empty", netif->name);
+    return (pktbuf_t*)0;
 }
