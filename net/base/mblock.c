@@ -54,7 +54,6 @@ size_error:
 
 void* mblock_alloc(mblock_t* mblock, int ms) {
     if( (ms < 0) || (mblock->locker.type == NLOCKER_NONE) ) {
-
         if( !mblock_free_blk_cnt(mblock) ) {
             info("free block count is zero!");
             return NULL;
@@ -76,8 +75,7 @@ void* mblock_alloc(mblock_t* mblock, int ms) {
 int mblock_free_blk_cnt(mblock_t* mblock) {
     nlocker_lock(&mblock->locker);
     int count = nquene_length(&mblock->free_queue);
-    nlocker_lock(&mblock->locker);
-
+    nlocker_unlock(&mblock->locker);
     return count;
 }
 
