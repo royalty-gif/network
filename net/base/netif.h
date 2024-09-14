@@ -83,6 +83,9 @@ netif_t* netif_add(const char* dev_name, const netif_ops_t* ops, void* ops_data)
 net_err_t netif_remove(netif_t* netif);
 net_err_t netif_register_layer(netif_type_t type, const link_layer_t* layer);
 void netif_set_hwaddr(netif_t* netif, const uint8_t* hwaddr, int len);
+net_err_t netif_set_addr(netif_t* netif, ipaddr_t* ip, ipaddr_t* netmask, ipaddr_t* gateway);
+net_err_t netif_set_active(netif_t* netif);
+net_err_t netif_set_deactive(netif_t* netif);
 
 // 输入输出管理
 net_err_t netif_put_in(netif_t* netif, pktbuf_t* buf, int tmo);

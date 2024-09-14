@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <malloc.h>
+#include "ether.h"
 #include "net_err.h"
+#include "netif.h"
 #include "nqueue.h"
 #include "pcap.h"
 #include "log.h"
 #include "exmsg.h"
 #include "utility.h"
 #include "pktbuf.h"
+#include "netif_pcap.h"
+#include "netif.h"
 
 static void pcap_test_example(void) {
     pcap_t *handle;
@@ -47,6 +51,27 @@ static void pcap_test_example(void) {
     pcap_close(handle);
     pcap_dump_close(dumpfile);
 
+}
+
+// 网络设备初始化
+static net_err_t netdev_init(void) {
+    pcap_data_t netdev0_data = { .ip = netdev0_phy_ip, .hwaddr = netdev0_hwaddr };
+
+    // 打开网络接口
+    netif_t* netif = netif_add("netif 0", &netdev_ops, &netdev0_data);
+    if( !netif ) {
+        error("netif add failed!");
+        return NET_ERR_SYS;
+    }
+
+    // 设置地址
+    ipaddr_t ip, mask, gw;
+    ipaddr_from_str(&ip, netdev0_ip);
+    ipaddr_from_str(&mask, netdev0_mask);
+    ipaddr_from_str(&gw, netdev0_gw);
+    netif_set_addr(netif, &ip, &mask, &gw);
+
+    return NET_ERR_OK;
 }
 
 static net_err_t test_exmsg_func(struct _func_msg_t* msg) {
@@ -131,7 +156,17 @@ int main() {
         return -1;
     }
 
-    pktbuf_test_example();
+    exmsg_init();
+    pktbuf_init();
+    netif_init();
+    ether_init();
+
+    netdev_init();
+
+    // 启动
+    exmsg_start();
+
+    while(1);
 
     log_fini();
 

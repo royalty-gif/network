@@ -157,6 +157,13 @@ void netif_set_hwaddr(netif_t *netif, const uint8_t *hwaddr, int len) {
     netif->hwaddr.len = len;
 }
 
+net_err_t netif_set_addr(netif_t* netif, ipaddr_t* ip, ipaddr_t* netmask, ipaddr_t* gateway) {
+    ipaddr_copy(&netif->ipaddr, ip ? ip : ipaddr_get_any());
+    ipaddr_copy(&netif->netmask, netmask ? netmask : ipaddr_get_any());
+    ipaddr_copy(&netif->gateway, gateway ? gateway : ipaddr_get_any());
+    return NET_ERR_OK;
+}
+
 net_err_t netif_put_in(netif_t *netif, pktbuf_t *buf, int tmo) {
     // 写入接收队列
     net_err_t err = fixq_send(&netif->in_q, buf, tmo);
@@ -171,6 +178,7 @@ net_err_t netif_put_in(netif_t *netif, pktbuf_t *buf, int tmo) {
     // 2. 数量为0，前面刚写入，正好立即被工作线程处理掉，无需发消息
     // 3. 数量超过1，即有累积的包，工作线程正在处理，无需发消息
     if (fixq_count(&netif->in_q) == 1) {
+        info("exmsg netif in!");
         exmsg_netif_in(netif);
     }
     return NET_ERR_OK;

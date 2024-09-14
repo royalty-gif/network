@@ -23,7 +23,7 @@ typedef enum {
 } pkt_pos_t;
 
 net_err_t pktbuf_init(void) {
-    info("init packet buf init...");
+    info("init packet buf ...");
 
     net_err_t ret = nlocker_init(&locker, NLOCKER_THREAD);
     if( ret != NET_ERR_OK ) {
@@ -203,6 +203,7 @@ void pktbuf_reset_acc(pktbuf_t* pbuf) {
  */
 
 static void display_check_buf(pktbuf_t* pbuf) {
+    #if 0
     if( !pbuf ) {
         error("buf is invaild...");
         return;
@@ -222,6 +223,7 @@ static void display_check_buf(pktbuf_t* pbuf) {
     }
 
     info("total_size: %d", total_size);
+    #endif
 } 
 
 /**

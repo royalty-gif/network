@@ -13,6 +13,6 @@ typedef struct _pcap_data_t {
     const uint8_t* hwaddr;             // 网卡的mac地址
 }pcap_data_t;
 
-extern const netif_ops_t pcap_ops;
+extern const netif_ops_t netdev_ops;
 
 #endif

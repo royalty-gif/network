@@ -1,8 +1,12 @@
 #include "netif_pcap.h"
+#include <sched.h>
+#include <string.h>
 #include "log.h"
 #include "pcap.h"
 #include "sys_plat.h"
 #include "ether.h"
+
+static int recv_flag = 1, send_flag = 1;
 
 // 查找本地网络接口列表，找到相应的名称
 static int pcap_find_device(const char* ip, char* name_buf) {
@@ -11,7 +15,7 @@ static int pcap_find_device(const char* ip, char* name_buf) {
     inet_pton(AF_INET, ip, &dest_ip);
 
     // 获取所有的接口列表
-    char err_buf[PCAP_ERRBUF_SIZE];
+    char err_buf[PCAP_ERRBUF_SIZE] = {0};
     pcap_if_t* pcap_if_list = NULL;
     int err = pcap_findalldevs(&pcap_if_list, err_buf);
     if (err < 0) {
@@ -57,12 +61,12 @@ static int pcap_show_list(void) {
     // 查找所有的网络接口
     int err = pcap_findalldevs(&pcapif_list, err_buf);
     if (err < 0) {
-        fprintf(stderr, "scan net card failed: %s\n", err_buf);
+        error("scan net card failed: %s", err_buf);
         pcap_freealldevs(pcapif_list);
         return -1;
     }
 
-    printf("net card list: \n");
+    info("net card list: ");
 
     // 遍历所有的可用接口，输出其信息
     for (pcap_if_t* item = pcapif_list; item != NULL; item = item->next) {
@@ -72,7 +76,7 @@ static int pcap_show_list(void) {
 
         // 显示ipv4地址
         for (struct pcap_addr* pcap_addr = item->addresses; pcap_addr != NULL; pcap_addr = pcap_addr->next) {
-            char str[INET_ADDRSTRLEN];
+            char str[INET_ADDRSTRLEN] = {0};
             struct sockaddr_in* ip_addr;
 
             struct sockaddr* sockaddr = pcap_addr->addr;
@@ -85,7 +89,7 @@ static int pcap_show_list(void) {
             if (name == NULL) {
                 name = item->name;
             }
-            printf("%d: IP:%s name: %s, \n",
+            info("%d: IP:%s name: %s, ",
                 count++,
                 name ? name : "unknown",
                 inet_ntop(AF_INET, &ip_addr->sin_addr, str, sizeof(str))
@@ -97,11 +101,11 @@ static int pcap_show_list(void) {
     pcap_freealldevs(pcapif_list);
 
     if ((pcapif_list == NULL) || (count == 0)) {
-        fprintf(stderr, "error: no net card!\n");
+        error("error: no net card!");
         return -1;
     }
 
-    printf("no net card found, check system configuration\n");
+    info("no net card found, check system configuration\n");
     return 0;
 }
 
@@ -113,24 +117,24 @@ int load_pcap_lib(void) {
 static pcap_t * pcap_device_open(const char* ip, const uint8_t* mac_addr) {
     // 加载pcap库
     if (load_pcap_lib() < 0) {
-        fprintf(stderr, "load pcap lib error\n");
+        error("load pcap lib error");
         return (pcap_t *)0;
     }
 
     // 利用上层传来的ip地址，
-    char name_buf[256];
+    char name_buf[256] = {0};
     if (pcap_find_device(ip, name_buf) < 0) {
-        fprintf(stderr, "pcap find error: no net card has ip: %s. \n", ip);
+        error("pcap find error: no net card has ip: %s. ", ip);
         pcap_show_list();
         return (pcap_t*)0;
     }
 
     // 根据名称获取ip地址、掩码等
-    char err_buf[PCAP_ERRBUF_SIZE];
+    char err_buf[PCAP_ERRBUF_SIZE] = {0};
     bpf_u_int32 mask;
     bpf_u_int32 net;
     if (pcap_lookupnet(name_buf, &net, &mask, err_buf) == -1) {
-        printf("pcap_lookupnet error: no net card: %s\n", name_buf);
+        error("pcap_lookupnet error: no net card: %s", name_buf);
         net = 0;
         mask = 0;
     }
@@ -138,40 +142,40 @@ static pcap_t * pcap_device_open(const char* ip, const uint8_t* mac_addr) {
     // 打开设备
     pcap_t * pcap = pcap_create(name_buf, err_buf);
     if (pcap == NULL) {
-        fprintf(stderr, "pcap_create: create pcap failed %s\n net card name: %s\n", err_buf, name_buf);
-        fprintf(stderr, "Use the following:\n");
+        error("pcap_create: create pcap failed %s\n net card name: %s", err_buf, name_buf);
+        error("Use the following:");
         pcap_show_list();
         return (pcap_t*)0;
     }
 
     if (pcap_set_snaplen(pcap, 65536) != 0) {
-        fprintf(stderr, "pcap_open: set none block failed: %s\n", pcap_geterr(pcap));
+        error("pcap_open: set none block failed: %s", pcap_geterr(pcap));
         return (pcap_t*)0;
     }
 
     if (pcap_set_promisc(pcap, 1) != 0) {
-        fprintf(stderr, "pcap_open: set none block failed: %s\n", pcap_geterr(pcap));
+        error("pcap_open: set none block failed: %s", pcap_geterr(pcap));
         return (pcap_t*)0;
     }
 
     if (pcap_set_timeout(pcap, 0) != 0) {
-        fprintf(stderr, "pcap_open: set none block failed: %s\n", pcap_geterr(pcap));
+        error("pcap_open: set none block failed: %s", pcap_geterr(pcap));
         return (pcap_t*)0;
     }
 
     // 非阻塞模式读取，程序中使用查询的方式读
     if (pcap_set_immediate_mode(pcap, 1) != 0) {
-        fprintf(stderr, "pcap_open: set im block failed: %s\n", pcap_geterr(pcap));
+        error("pcap_open: set im block failed: %s", pcap_geterr(pcap));
         return (pcap_t*)0;
     }
 
     if (pcap_activate(pcap) != 0) {
-        fprintf(stderr, "pcap_open: active failed: %s\n", pcap_geterr(pcap));
+        error("pcap_open: active failed: %s", pcap_geterr(pcap));
         return (pcap_t*)0;
     }
 
     if (pcap_setnonblock(pcap, 0, err_buf) != 0) {
-        fprintf(stderr, "pcap_open: set none block failed: %s\n", pcap_geterr(pcap));
+        error("pcap_open: set none block failed: %s", pcap_geterr(pcap));
         return (pcap_t*)0;
     }
 
@@ -183,11 +187,11 @@ static pcap_t * pcap_device_open(const char* ip, const uint8_t* mac_addr) {
         mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5],
         mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
     if (pcap_compile(pcap, &fp, filter_exp, 0, net) == -1) {
-        printf("pcap_open: couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(pcap));
+        error("pcap_open: couldn't parse filter %s: %s", filter_exp, pcap_geterr(pcap));
         return (pcap_t*)0;
     }
     if (pcap_setfilter(pcap, &fp) == -1) {
-        printf("pcap_open: couldn't install filter %s: %s\n", filter_exp, pcap_geterr(pcap));
+        error("pcap_open: couldn't install filter %s: %s", filter_exp, pcap_geterr(pcap));
         return (pcap_t*)0;
     }
     return pcap;
@@ -195,12 +199,12 @@ static pcap_t * pcap_device_open(const char* ip, const uint8_t* mac_addr) {
 
 // 接收线程
 void* recv_thread(void* arg) {
-    plat_printf("recv thread is running...\n");
+    info("recv thread is running...");
 
     netif_t* netif = (netif_t*)arg;
     pcap_t* pcap = (pcap_t*)netif->ops_data;
 
-    while (1) {
+    while (recv_flag) {
         // 获取一个数据包
         // 1 - 成功读取数据包, 0 - 没有数据包，其它值-出错
         struct pcap_pkthdr* pkthdr;
@@ -227,19 +231,20 @@ void* recv_thread(void* arg) {
         }
     }
 
+    info("recv thread exit!");
     return NULL;
 }
 
 // 模拟硬件发送线程
 void* xmit_thread(void* arg) {
-    plat_printf("xmit thread is running...\n");
+    info("xmit thread is running...");
 
     // 最大1514， 此为以太网MTU（1500）+包头（14）字节
-    static uint8_t rw_buffer[1514];
+    static uint8_t rw_buffer[1514] = {0};
     netif_t* netif = (netif_t*)arg;
     pcap_t* pcap = (pcap_t*)netif->ops_data;
 
-    while (1) {
+    while (send_flag) {
         // 从发送队列取数据包
         pktbuf_t* buf = netif_get_out(netif, 0);
         if (buf == (pktbuf_t*)0) {
@@ -253,11 +258,13 @@ void* xmit_thread(void* arg) {
         pktbuf_free(buf);   // 拷完后释放
 
         if (pcap_inject(pcap, rw_buffer, total_size) == -1) {
-            fprintf(stderr, "pcap send: send packet failed!:%s\n", pcap_geterr(pcap));
-            fprintf(stderr, "pcap send: pcaket size %d\n", total_size);
+            error("pcap send: send packet failed!:%s", pcap_geterr(pcap));
+            error("pcap send: pcaket size %d", total_size);
             continue;
         }
     }
+
+    info("xmit thread exit!");
 
     return NULL;
 }
@@ -271,6 +278,8 @@ static net_err_t netif_pcap_open(struct _netif_t* netif, void* ops_data) {
         error("pcap open failed! name: %s\n", netif->name);
         return NET_ERR_IO;
     }
+
+    // 保存open成功的pcap
     netif->ops_data = pcap;
 
     netif->type = NETIF_TYPE_ETHER;  // 以太网类型
@@ -284,10 +293,12 @@ static net_err_t netif_pcap_open(struct _netif_t* netif, void* ops_data) {
 
 // 关闭pcap网络接口
 static void netif_pcap_close(struct _netif_t* netif) {
+    // 线程退出
+    recv_flag = 0;
+    send_flag = 0;
+
     pcap_t* pcap = (pcap_t*)netif->ops_data;
     pcap_close(pcap);
-
-    // todo: 关闭线程
 }
 
 // 向接口发送命令

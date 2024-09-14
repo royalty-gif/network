@@ -59,6 +59,7 @@ static void do_netif_in(exmsg_t* msg) {
     pktbuf_t* buf;
     while ((buf = netif_get_in(netif, -1))) {
         info("recv a packet!");
+        pktbuf_free(buf);
     }
 }
 
