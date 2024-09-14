@@ -9,8 +9,8 @@
 static const char netdev0_ip[] = "192.168.74.2";
 static const char netdev0_mask[] = "255.255.255.0";
 static const char netdev0_gw[] = "192.168.74.1";
-static const uint8_t netdev0_hwaddr[] = { 0x00, 0x0c, 0x29, 0xef, 0x23, 0x25 };
-static const char netdev0_phy_ip[] = "172.16.14.35";
+static const uint8_t netdev0_hwaddr[] = { 0x00, 0x16, 0x3e, 0x03, 0x32, 0xe5 };
+static const char netdev0_phy_ip[] = "172.19.127.142";
 
 #define plat_strlen    strlen
 #define plat_strcpy    strcpy

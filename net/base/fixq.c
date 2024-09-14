@@ -87,16 +87,15 @@ void* fixq_recv(fixq_t* q, int tmo) {
     nlocker_lock(&q->locker);
     if( !q->cnt && tmo < 0 ) {
         // 缓存为空且不需要等待，则退出
-        info("fix queue is empty!");
         nlocker_unlock(&q->locker);
-
         return NULL;
     }
+
     nlocker_unlock(&q->locker);
 
     // 等待数据包可用
     if (sys_sem_wait(q->recv_sem, tmo) < 0) {
-        error("wait send sem failed!");
+        //error("wait send sem failed!");
         return NULL;
     }
 

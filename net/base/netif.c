@@ -178,7 +178,6 @@ net_err_t netif_put_in(netif_t *netif, pktbuf_t *buf, int tmo) {
     // 2. 数量为0，前面刚写入，正好立即被工作线程处理掉，无需发消息
     // 3. 数量超过1，即有累积的包，工作线程正在处理，无需发消息
     if (fixq_count(&netif->in_q) == 1) {
-        info("exmsg netif in!");
         exmsg_netif_in(netif);
     }
     return NET_ERR_OK;
@@ -193,7 +192,7 @@ pktbuf_t *netif_get_in(netif_t *netif, int tmo) {
         return buf;
     }
 
-    info("netif %s in_q empty", netif->name);
+    //info("netif %s in_q empty", netif->name);
     return (pktbuf_t*)0;
 }
 

@@ -59,6 +59,7 @@ static void do_netif_in(exmsg_t* msg) {
     pktbuf_t* buf;
     while ((buf = netif_get_in(netif, -1))) {
         info("recv a packet!");
+        
         pktbuf_free(buf);
     }
 }
@@ -68,11 +69,9 @@ static void* work_thread(void* arg) {
     info("The exmsg work thread is running ...");
 
     while(1) {
-        exmsg_t* msg = (exmsg_t*)fixq_recv(&msg_queue, 0);
+        exmsg_t* msg = (exmsg_t*)fixq_recv(&msg_queue, 10);
 
         if( msg ) {
-            info("recvive a msg, type: %d", msg->type);
-
             switch(msg->type) {
                 case NET_EXMSG_NETIF_IN: {
                     do_netif_in(msg);

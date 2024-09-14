@@ -58,13 +58,13 @@ int sys_sem_wait(sys_sem_t sem, size_t tmo_ms) {
         if( tmo_ms > 0) {
             ret = pthread_cond_timedwait(&(sem->cond), &(sem->mutex), &end_tm);
             if (ret == ETIMEDOUT) {
-                error("sem wait timeout!");
+                //error("sem wait timeout!");
                 goto failed;
             }
         } else {
             ret = pthread_cond_wait(&(sem->cond), &(sem->mutex));
             if (ret < 0) {
-                error("sem wait failed");
+                //error("sem wait failed");
                 goto failed;
             }
         }

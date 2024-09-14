@@ -74,11 +74,14 @@ static pktblk_t* pktbuf_first_blk(pktbuf_t* pbuf) {
  *  @brief: 回收block链表
  */
 static void pktblk_free_list(pktblk_t* blk_list) {
-    while( blk_list ) {
+    pktblk_t* curr_blk = blk_list;
+
+    do {
         pktblk_t* next = pktblk_next(blk_list);
         mblock_free(&block_list, blk_list);
         blk_list = next;
-    }
+    } while( curr_blk != blk_list );
+    
 }
 
 /**
