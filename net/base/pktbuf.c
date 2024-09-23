@@ -81,7 +81,17 @@ static void pktblk_free_list(pktblk_t* blk_list) {
         mblock_free(&block_list, blk_list);
         blk_list = next;
     } while( curr_blk != blk_list );
-    
+
+    info("mblock_free_blk_cnt: %d", mblock_free_blk_cnt(&block_list));
+}
+
+/**
+ *  @brief: 回收pktbuf的block链表
+ */
+static void pktbuf_free_blk_list(pktbuf_t* pbuf) {
+    while( !nqueue_is_empty(&pbuf->blk_queue) ) {
+        mblock_free(&block_list, nqueue_pop_front(&pbuf->blk_queue));
+    }
 }
 
 /**
@@ -215,8 +225,7 @@ static void display_check_buf(pktbuf_t* pbuf) {
     info("packet buf total size: %d", pbuf->total_size);
     info("queue length: %d", nquene_length(&pbuf->blk_queue));
 
-    pktblk_t* first_blk = pktbuf_first_blk(pbuf);
-    pktblk_t* curr = first_blk;
+    pktblk_t* curr = pktbuf_first_blk(pbuf);
     nlist_node_t* head = &pbuf->blk_queue.head;
 
     int total_size = 0;
@@ -252,8 +261,9 @@ pktbuf_t* pktbuf_alloc(int size) {
     if( size ) {
         pktblk_t* block = pktblk_alloc_list(size, PACKET_INSERT_REAR);
         if( !block ) {
+            error("pktblk_alloc_list error!");
             mblock_free(&pktbuf_list, pbuf);
-            return (pktbuf_t*)0;
+            return (pktbuf_t *)0;
         }
 
         pktbuf_insert_blk_list(pbuf, block, PACKET_INSERT_REAR);
@@ -275,7 +285,8 @@ void pktbuf_free (pktbuf_t* pbuf) {
     nlocker_lock(&locker);
 
     if( --pbuf->ref == 0 ) {
-        pktblk_free_list(pktbuf_first_blk(pbuf));
+        //pktblk_free_list(pktbuf_first_blk(pbuf));
+        pktbuf_free_blk_list(pbuf);
         mblock_free(&pktbuf_list, pbuf);
     }
 
@@ -392,7 +403,7 @@ static int curr_blk_remain(pktbuf_t* buf) {
         return 0;
     }
 
-    return (int)(buf->curr_blk->pdata + block->size - buf->blk_offset);
+    return (int)(block->pdata + block->size - buf->blk_offset);
 }
 
 // 移动指针位置，如果是跨越一个包，则仅移动到下一个包的开头
@@ -433,7 +444,6 @@ int pktbuf_write(pktbuf_t *buf, uint8_t *src, int size) {
     // 循环写入数据
     while( size > 0 ) {
         int blk_size = curr_blk_remain(buf);
-
         int curr_copy_size = size > blk_size ? blk_size : size;
         plat_memcpy(buf->blk_offset, src, curr_copy_size);
 
@@ -482,5 +492,5 @@ int pktbuf_read(pktbuf_t *buf, uint8_t *dest, int size) {
  *  @brief: 移动当前的读写位置到offset偏移处
  */
 net_err_t pktbuf_seek(pktbuf_t *buf, int offset) {
-
+    // 
 }

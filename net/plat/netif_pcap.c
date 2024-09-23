@@ -203,7 +203,7 @@ void* recv_thread(void* arg) {
 
     netif_t* netif = (netif_t*)arg;
     pcap_t* pcap = (pcap_t*)netif->ops_data;
-
+    int count = 0;
     while (recv_flag) {
         // 获取一个数据包
         // 1 - 成功读取数据包, 0 - 没有数据包，其它值-出错
@@ -219,7 +219,8 @@ void* recv_thread(void* arg) {
             warn("buf == NULL");
             continue;
         }
-
+        info("count: %d", count);
+        count++;
         // 写入数据链表中
         pktbuf_write(buf, (uint8_t*)pkt_data, pkthdr->len);
 

@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <malloc.h>
@@ -12,6 +13,7 @@
 #include "pktbuf.h"
 #include "netif_pcap.h"
 #include "netif.h"
+#include "mblock.h"
 
 static void pcap_test_example(void) {
     pcap_t *handle;
@@ -135,27 +137,61 @@ static void nqueue_test_example(void) {
     }
 }
 
+static void mblock_test(void) {
+    static uint8_t buffer[10][100];
+	mblock_t blist;
+
+	mblock_init(&blist, buffer, 100, 10, NLOCKER_THREAD);
+	void* temp[10];
+
+	// 从管理器中逐个分配内存块
+	for (int i = 0; i < 10; i++) {
+		temp[i] = mblock_alloc(&blist, 0);
+		printf("block: %p, free count:%d\n", temp[i], mblock_free_blk_cnt(&blist));
+	}
+	for (int i = 0; i < 10; i++) {
+		mblock_free(&blist, temp[i]);
+		printf("free count:%d\n", mblock_free_blk_cnt(&blist));
+	}
+
+	mblock_destroy(&blist);
+}
+
 static void pktbuf_test_example(void) {
     pktbuf_init();
 
-    pktbuf_t* pbuf = pktbuf_alloc(65535);
-    if( pbuf == NULL ) {
-        info("pbuf alloc failed!");
+    int num = 100000;
+    int count = num;
+
+
+    uint16_t pkt_data[1024] = {0};
+    memset(pkt_data, 1, 1024);
+    uint16_t pkt_read_data[1024] = {0};
+    while(count--) {
+        pktbuf_t* pbuf = pktbuf_alloc(1024);
+        if( pbuf == NULL ) {
+            info("pbuf alloc failed!");
+            continue;
+        }
+        //info("alloc pbuf: %p", pbuf);
+        //info("add header!");
+        //pktbuf_add_header(pbuf, 10000, 0);
+
+        //info("remove header!");
+        //pktbug_remove_header(pbuf, 10000);
+        // info("write bebin");
+        // pktbuf_write(pbuf, (uint8_t *)pkt_data, 1024);
+        // info("write done");
+        // pktbuf_reset_acc(pbuf);
+        // info("read bebin");
+        // //pktbuf_read(pbuf, (uint8_t *)pkt_read_data, 1024);
+        // info("read done");
+
+        pktbuf_free(pbuf);
     }
-
-    info("add header!");
-    pktbuf_add_header(pbuf, 10000, 0);
-
-    info("remove header!");
-    pktbug_remove_header(pbuf, 10000);
 }
 
-int main() { 
-    if(log_init() != LOG_NO_ERROR) {
-        printf("log init error\n");
-        return -1;
-    }
-
+static void main_test(void) {
     exmsg_init();
     pktbuf_init();
     netif_init();
@@ -167,6 +203,16 @@ int main() {
     exmsg_start();
 
     while(1);
+}
+
+int main() { 
+    if(log_init() != LOG_NO_ERROR) {
+        printf("log init error\n");
+        return -1;
+    }
+
+    //pktbuf_test_example();
+    main_test();
 
     log_fini();
 
