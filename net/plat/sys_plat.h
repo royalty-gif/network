@@ -34,4 +34,7 @@ sys_thread_t sys_thread_self(void);
 
 void sys_sleep(int ms);
 
+// 定时器相关
+uint32_t sys_now(void);
+
 #endif

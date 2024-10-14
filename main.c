@@ -9,11 +9,13 @@
 #include "pcap.h"
 #include "log.h"
 #include "exmsg.h"
+#include "sys_plat.h"
 #include "utility.h"
 #include "pktbuf.h"
 #include "netif_pcap.h"
 #include "netif.h"
 #include "mblock.h"
+#include "timer.h"
 
 static void pcap_test_example(void) {
     pcap_t *handle;
@@ -94,6 +96,24 @@ static void exmsg_test_example(void) {
     sleep(1);
 }
 
+static void timer_test_proc_func(struct _net_timer_t* timer, void* arg) {
+    info("timer_test_proc_func");
+}
+
+static void timer_test_example(void) {
+    net_timer_init();
+
+    net_timer_t timer;
+    const char* timer_name = "timer_test";
+
+    net_timer_add(&timer, timer_name, timer_test_proc_func, NULL, 
+                     2 * 1000, NET_TIMER_RELOAD);
+
+    while(1) {
+        net_timer_check_tmo();
+    }
+}
+
 static void nqueue_test_example(void) {
     nqueue_t queue;
     nqueue_init(&queue);
@@ -118,9 +138,9 @@ static void nqueue_test_example(void) {
     }
 
     info("queue length: %d", nquene_length(&queue));
-    info("front: %d, back: %d", 
-         container_of(nqueue_front(&queue),nqueue_node, node)->data,
-         container_of(nqueue_back(&queue),nqueue_node, node)->data);
+    info("front: %d, back: %d",
+         nlist_entry(nqueue_front(&queue), nqueue_node, node)->data,
+         nlist_entry(nqueue_back(&queue), nqueue_node, node)->data);
 
     int pop_front = 1;
     for(int i = 0; i < test_count; i++) {
@@ -131,7 +151,7 @@ static void nqueue_test_example(void) {
             node = nqueue_pop_back(&queue);
         }
 
-        nqueue_node* qnode = container_of(node, nqueue_node, node);
+        nqueue_node *qnode = nlist_entry(node, nqueue_node, node);
         info("node value: %d", qnode->data);
         free(qnode);
     }
@@ -165,7 +185,6 @@ static void pktbuf_test_example(void) {
 
 
     uint16_t pkt_data[1024] = {0};
-    memset(pkt_data, 1, 1024);
     uint16_t pkt_read_data[1024] = {0};
     while(count--) {
         pktbuf_t* pbuf = pktbuf_alloc(1024);
@@ -173,22 +192,21 @@ static void pktbuf_test_example(void) {
             info("pbuf alloc failed!");
             continue;
         }
-        //info("alloc pbuf: %p", pbuf);
-        //info("add header!");
-        //pktbuf_add_header(pbuf, 10000, 0);
 
-        //info("remove header!");
-        //pktbug_remove_header(pbuf, 10000);
-        // info("write bebin");
-        // pktbuf_write(pbuf, (uint8_t *)pkt_data, 1024);
-        // info("write done");
-        // pktbuf_reset_acc(pbuf);
-        // info("read bebin");
-        // //pktbuf_read(pbuf, (uint8_t *)pkt_read_data, 1024);
-        // info("read done");
+        info("add header!");
+        pktbuf_add_header(pbuf, 10000, 0);
+
+        info("remove header!");
+        pktbug_remove_header(pbuf, 10000);
+
+        pktbuf_write(pbuf, (uint8_t *)pkt_data, 1024);
+        pktbuf_reset_acc(pbuf);
+        pktbuf_read(pbuf, (uint8_t *)pkt_read_data, 1024);
 
         pktbuf_free(pbuf);
     }
+
+    info("test done!");
 }
 
 static void main_test(void) {
@@ -212,7 +230,8 @@ int main() {
     }
 
     //pktbuf_test_example();
-    main_test();
+    // main_test();
+    timer_test_example();
 
     log_fini();
 

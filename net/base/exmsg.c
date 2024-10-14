@@ -4,7 +4,9 @@
 #include "mblock.h"
 #include "net_err.h"
 #include "log.h"
+#include "netif.h"
 #include "nsem.h"
+#include "pktbuf.h"
 
 static void* msg_tbl[EXMSG_MSG_CNT];      // 消息缓冲区
 static fixq_t msg_queue;                  // 消息队列
@@ -60,7 +62,14 @@ static void do_netif_in(exmsg_t* msg) {
     while ((buf = netif_get_in(netif, -1))) {
         info("recv a packet!");
         
-        pktbuf_free(buf);
+        if( netif->link_layer ) {
+            net_err_t err = netif->link_layer->in(netif, buf);
+
+            if(err < 0) {
+                error("netif link layer in error, err = %d", err);
+                pktbuf_free(buf);
+            }
+        }
     }
 }
 

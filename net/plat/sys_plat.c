@@ -1,4 +1,6 @@
 #include "sys_plat.h"
+#include <bits/time.h>
+#include <time.h>
 #include <unistd.h>
 #include "log.h"
 
@@ -24,4 +26,14 @@ sys_thread_t sys_thread_self(void) {
 
 void sys_sleep(int ms) {
     usleep(ms * 1000);
+}
+
+uint32_t sys_now(void) {
+    struct timespec ts;
+    uint32_t now;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    now = (uint32_t)(ts.tv_sec * 1000L + ts.tv_nsec / 1000000L); // 毫秒ms
+
+    return now;
 }

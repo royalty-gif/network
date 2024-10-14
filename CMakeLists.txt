@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.7)
 # 项目名称
 project(net)
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_BUILD_TYPE Debug)
 
 # 链接库路径
 LINK_DIRECTORIES(

@@ -13,4 +13,6 @@
 #define NETIF_DEV_CNT      4   // 网络接口的数量
 #define NETIF_INQ_SIZE     50  // 网卡输入队列最大容量
 #define NETIF_OUTQ_SIZE    50  // 网卡输出队列最大容量
+
+#define TIMER_NAME_SIZE    32  // 定时器名称长度
 #endif

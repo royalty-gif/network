@@ -37,6 +37,29 @@ typedef struct _pktbuf_t {
     uint8_t* blk_offset;  // 当前数据块偏移量
 } pktbuf_t;
 
+/**
+ *  @brief: 获取当前block的下一个子包
+ */
+static pktblk_t* pktblk_next(pktblk_t* blk) {
+    nlist_t* next = blk->node.next;
+    return nlist_entry(next, pktblk_t, node);
+}
+
+/**
+ *  @brief: 获取pktbuf的第一个block
+ */
+static pktblk_t* pktbuf_first_blk(pktbuf_t* pbuf) {
+    nlist_t* first = nqueue_front(&pbuf->blk_queue);
+    return nlist_entry(first, pktblk_t, node);
+}
+
+/**
+ *  @brief: 获取buf第一个数据块
+ */
+static uint8_t* pktbuf_data(pktbuf_t* buf) {
+    pktblk_t* first = pktbuf_first_blk(buf);
+    return first ? first->pdata : (uint8_t*)0;
+}
 
 net_err_t pktbuf_init(void);
 pktbuf_t* pktbuf_alloc(int size);

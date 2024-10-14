@@ -55,22 +55,6 @@ nlocker_failed:
 }
 
 /**
- *  @brief: 获取当前block的下一个子包
- */
-static pktblk_t* pktblk_next(pktblk_t* blk) {
-    nlist_t* next = blk->node.next;
-    return container_of(next, pktblk_t, node);
-}
-
-/**
- *  @brief: 获取pktbuf的第一个block
- */
-static pktblk_t* pktbuf_first_blk(pktbuf_t* pbuf) {
-    nlist_t* next = nqueue_front(&pbuf->blk_queue);
-    return container_of(next, pktblk_t, node);
-}
-
-/**
  *  @brief: 回收block链表
  */
 static void pktblk_free_list(pktblk_t* blk_list) {
@@ -306,7 +290,6 @@ net_err_t pktbuf_add_header(pktbuf_t* pbuf, int size, int cont) {
 
     // 检查头部是否足够
     int remain_size = block->pdata - block->payload;
-    info("remain size: %d", remain_size);
     if( size <= remain_size ) {
         block->size += size;
         block->pdata -= size;

@@ -1,5 +1,6 @@
 #include "ether.h"
 #include "log.h"
+#include "pktbuf.h"
 
 static net_err_t ether_open(struct _netif_t *netif) {
 
@@ -10,7 +11,12 @@ static void ether_close(struct _netif_t *netif) {
 }
 
 static net_err_t ether_in(struct _netif_t* netif, pktbuf_t* buf) {
+    info("enter func ether in");
 
+    ether_pkt_t *pkt = (ether_pkt_t*)pktbuf_data(buf);
+
+    info("protocol: %d", pkt->head.protocol);
+    pktbuf_free(buf);
 }
 
 net_err_t ether_out(struct _netif_t *netif, ipaddr_t *dest, pktbuf_t *buf) {
