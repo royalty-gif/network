@@ -10,15 +10,21 @@ typedef struct nlist_node_s {
 
 typedef nlist_node_t nlist_t;
 
-#define list_for_each(node, list) \
+#define nlist_for_each(node, list) \
     for (node = (list)->next; !is_equal(node, list); node = node->next)
 
-#define list_entry(ptr, type, member) container_of(ptr, type, member)
+#define nlist_for_each_safe(pos, n, head) \
+    for (pos = (head)->next, n = pos->next; pos != (head); \
+        pos = n, n = pos->next)
+
+#define nlist_entry(ptr, type, member) container_of(ptr, type, member)
 
 void nlist_init(nlist_node_t* list);
 void nlist_insert_after(nlist_t* list, nlist_node_t* node);
 void nlist_insert_before(nlist_t* list, nlist_node_t* node);
 void nlist_remove(nlist_node_t* node);
+void nlist_remove_entry(nlist_node_t *node);
+void nlist_remove_init(nlist_node_t *node);
 int nlist_is_empty(nlist_t* list);
 
 #endif

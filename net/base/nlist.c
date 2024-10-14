@@ -26,6 +26,16 @@ static void nlist_remove_node(nlist_node_t* prev, nlist_node_t* next) {
     next->prev = prev;
 }
 
+void nlist_remove_init(nlist_node_t* node) {
+    nlist_remove_node(node->prev, node->next);
+
+    nlist_init(node);
+}
+
+void nlist_remove_entry(nlist_node_t* node) {
+    nlist_remove_node(node->prev, node->next);
+}
+
 void nlist_remove(nlist_node_t *node) {
     nlist_remove_node(node->prev, node->next);
 
