@@ -10,9 +10,11 @@ typedef struct nlist_node_s {
 
 typedef nlist_node_t nlist_t;
 
+// 普通遍历版本（遍历期间不允许有修改链表的操作）
 #define nlist_for_each(node, list) \
     for (node = (list)->next; !is_equal(node, list); node = node->next)
 
+// 安全遍历版本
 #define nlist_for_each_safe(pos, n, head) \
     for (pos = (head)->next, n = pos->next; pos != (head); \
         pos = n, n = pos->next)
