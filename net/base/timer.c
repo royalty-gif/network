@@ -89,8 +89,6 @@ net_err_t net_timer_check_tmo(void) {
 
     // 遍历超时事件
     nlist_node_t* node, *next;
-    if( nlist_is_empty(&timer_list) ) return NET_ERR_OK;
-
     nlist_for_each_safe(node, next, &timer_list) {
         net_timer_t* curr = nlist_entry(node, net_timer_t, node);
         if( TIME_LESS_THAN(now, curr->time) ) {
