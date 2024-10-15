@@ -210,13 +210,13 @@ static void pktbuf_test_example(void) {
 }
 
 static void main_test(void) {
+    net_timer_init();
     exmsg_init();
     pktbuf_init();
     netif_init();
     ether_init();
 
     netdev_init();
-
     // 启动
     exmsg_start();
 
@@ -229,9 +229,7 @@ int main() {
         return -1;
     }
 
-    //pktbuf_test_example();
-    // main_test();
-    timer_test_example();
+    main_test();
 
     log_fini();
 

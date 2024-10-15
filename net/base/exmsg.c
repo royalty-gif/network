@@ -7,6 +7,7 @@
 #include "netif.h"
 #include "nsem.h"
 #include "pktbuf.h"
+#include "timer.h"
 
 static void* msg_tbl[EXMSG_MSG_CNT];      // 消息缓冲区
 static fixq_t msg_queue;                  // 消息队列
@@ -60,7 +61,6 @@ static void do_netif_in(exmsg_t* msg) {
     // 反复从接口中取出包，然后一次性处理
     pktbuf_t* buf;
     while ((buf = netif_get_in(netif, -1))) {
-        info("recv a packet!");
         
         if( netif->link_layer ) {
             net_err_t err = netif->link_layer->in(netif, buf);
@@ -79,6 +79,8 @@ static void* work_thread(void* arg) {
 
     while(1) {
         exmsg_t* msg = (exmsg_t*)fixq_recv(&msg_queue, 10);
+
+        net_timer_check_tmo();
 
         if( msg ) {
             switch(msg->type) {
